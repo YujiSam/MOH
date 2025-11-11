@@ -131,7 +131,7 @@ class AnalisadorPivoRapido:
                 # Verificar se atinge a meta e é melhor que a atual
                 if (valor_total >= meta_adaptabilidade and 
                     (valor_total < melhor_valor or 
-                     (valor_total == melhor_valor and tempo_total < melhor_tempo))):
+                    (valor_total == melhor_valor and tempo_total < melhor_tempo))):
                     
                     melhor_valor = valor_total
                     melhor_combinacao = [h['id'] for h in combinacao]
@@ -201,8 +201,8 @@ class AnalisadorPivoRapido:
             }
         
         elif (resultado_guloso['meta_atingida'] and resultado_otimo['meta_atingida'] and
-              resultado_guloso['tempo_total'] > resultado_otimo['tempo_total'] and
-              resultado_guloso['adaptabilidade_final'] == resultado_otimo['adaptabilidade_final']):
+            resultado_guloso['tempo_total'] > resultado_otimo['tempo_total'] and
+            resultado_guloso['adaptabilidade_final'] == resultado_otimo['adaptabilidade_final']):
             # Mesma adaptabilidade, mas guloso leva mais tempo
             contraexemplo = {
                 'meta': meta_adaptabilidade,
@@ -317,7 +317,7 @@ class AnalisadorPivoRapido:
         print("🎯 OBJETIVO: Alcançar adaptabilidade mínima S ≥ 15 usando habilidades básicas")
         print(f"📊 HABILIDADES BÁSICAS DISPONÍVEIS: {len(self.habilidades_basicas)}")
         print("   " + ", ".join([f"{h['id']} (V:{h['valor']}, T:{h['tempo']}h, V/T:{h['razao_vt']:.3f})" 
-                               for h in self.habilidades_basicas]))
+                            for h in self.habilidades_basicas]))
         print()
         
         # Análise de complexidade
@@ -391,8 +391,8 @@ class AnalisadorPivoRapido:
         
         for comp in criterios_comparacao:
             status = "✅" if comp['meta_atingida'] else "❌"
-            print(f"   {comp['critério']}: S={comp['adaptabilidade']}, T={comp['tempo']}h, "
-                  f"Eff={comp['eficiencia']:.4f} {status}")
+            print(f"   {comp['critério']}: S={comp['adaptabilidade']}, T={comp['tempo']}h, ")
+            print(f"Eff={comp['eficiencia']:.4f} {status}")
         print()
         
         # Análise de contraexemplos
@@ -409,8 +409,8 @@ class AnalisadorPivoRapido:
                 print(f"   Ótimo: S={ce['otimo']['adaptabilidade_final']}, T={ce['otimo']['tempo_total']}h")
                 
                 if ce['tipo'] == 'super_adaptabilidade':
-                    print(f"   Problema: Guloso super-otimiza adaptabilidade "
-                          f"(+{ce['diferenca_adaptabilidade']} pontos além do necessário)")
+                    print(f"   Problema: Guloso super-otimiza adaptabilidade ")
+                    print(f"(+{ce['diferenca_adaptabilidade']} pontos além do necessário)")
                 elif ce['tipo'] == 'mais_tempo':
                     print(f"   Problema: Guloso gasta {ce['diferenca_tempo']}h a mais para mesma adaptabilidade")
                 elif ce['tipo'] == 'falha_meta':
@@ -485,17 +485,17 @@ class AnalisadorPivoRapido:
         
         estrategias = ['Guloso (V/T)', 'Guloso (Valor)', 'Guloso (Tempo)', 'Ótimo']
         adaptabilidades = [guloso_vt['adaptabilidade_final'], guloso_valor['adaptabilidade_final'], 
-                         guloso_tempo['adaptabilidade_final'], otimo['adaptabilidade_final']]
+                        guloso_tempo['adaptabilidade_final'], otimo['adaptabilidade_final']]
         tempos = [guloso_vt['tempo_total'], guloso_valor['tempo_total'], 
-                 guloso_tempo['tempo_total'], otimo['tempo_total']]
+                guloso_tempo['tempo_total'], otimo['tempo_total']]
         
         x = np.arange(len(estrategias))
         largura = 0.35
         
         bars1 = ax1.bar(x - largura/2, adaptabilidades, largura, label='Adaptabilidade (S)', 
-                       color='lightgreen', edgecolor='darkgreen')
+                    color='lightgreen', edgecolor='darkgreen')
         bars2 = ax1.bar(x + largura/2, tempos, largura, label='Tempo Total (h)', 
-                       color='lightblue', edgecolor='darkblue')
+                    color='lightblue', edgecolor='darkblue')
         
         ax1.set_title(f'Comparação de Estratégias - Meta S ≥ {meta_principal}')
         ax1.set_xlabel('Estratégia')

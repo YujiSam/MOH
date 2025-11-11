@@ -22,7 +22,8 @@ class OrdenadorHabilidades:
                 'Tempo': dados['Tempo'],
                 'Valor': dados['Valor'],
                 'Complexidade': dados['Complexidade'],
-                'Pre_Reqs': dados['Pre_Reqs']
+                'Pre_Reqs': dados['Pre_Reqs'],
+                'Razao_VT': dados['Valor'] / dados['Tempo'] if dados['Tempo'] > 0 else 0
             })
         return habilidades
     
@@ -59,9 +60,9 @@ class OrdenadorHabilidades:
             elif criterio == 'Valor':
                 left_val = left[i]['Valor']
                 right_val = right[j]['Valor']
-            elif criterio == 'razao_vt':
-                left_val = left[i]['Valor'] / left[i]['Tempo'] if left[i]['Tempo'] > 0 else 0
-                right_val = right[j]['Valor'] / right[j]['Tempo'] if right[j]['Tempo'] > 0 else 0
+            elif criterio == 'Razao_VT':
+                left_val = left[i]['Razao_VT']
+                right_val = right[j]['Razao_VT']
             else:
                 raise ValueError(f"Critério não suportado: {criterio}")
             
@@ -104,9 +105,9 @@ class OrdenadorHabilidades:
             elif criterio == 'Valor':
                 item_val = item['Valor']
                 pivot_val = pivot['Valor']
-            elif criterio == 'razao_vt':
-                item_val = item['Valor'] / item['Tempo'] if item['Tempo'] > 0 else 0
-                pivot_val = pivot['Valor'] / pivot['Tempo'] if pivot['Tempo'] > 0 else 0
+            elif criterio == 'Razao_VT':
+                item_val = item['Razao_VT']
+                pivot_val = pivot['Razao_VT']
             else:
                 raise ValueError(f"Critério não suportado: {criterio}")
             
@@ -132,8 +133,8 @@ class OrdenadorHabilidades:
             key_func = lambda x: x['Tempo']
         elif criterio == 'Valor':
             key_func = lambda x: x['Valor']
-        elif criterio == 'razao_vt':
-            key_func = lambda x: x['Valor'] / x['Tempo'] if x['Tempo'] > 0 else 0
+        elif criterio == 'Razao_VT':
+            key_func = lambda x: x['Razao_VT']
         else:
             raise ValueError(f"Critério não suportado: {criterio}")
         
@@ -148,28 +149,30 @@ class OrdenadorHabilidades:
         
         # Calcular métricas para cada sprint
         def calcular_metricas(sprint):
+            tempos = [h['Tempo'] for h in sprint if h['Tempo'] > 0]
             return {
                 'total_habilidades': len(sprint),
                 'tempo_total': sum(h['Tempo'] for h in sprint),
                 'valor_total': sum(h['Valor'] for h in sprint),
                 'complexidade_media': np.mean([h['Complexidade'] for h in sprint]),
                 'complexidade_total': sum(h['Complexidade'] for h in sprint),
-                'eficiencia_media': np.mean([h['Valor'] / h['Tempo'] for h in sprint if h['Tempo'] > 0])
+                'eficiencia_media': np.mean([h['Razao_VT'] for h in sprint if h['Tempo'] > 0])
             }
+        
+        metricas_a = calcular_metricas(sprint_a)
+        metricas_b = calcular_metricas(sprint_b)
         
         return {
             'sprint_a': {
                 'habilidades': sprint_a,
-                'metricas': calcular_metricas(sprint_a)
+                'metricas': metricas_a
             },
             'sprint_b': {
                 'habilidades': sprint_b,
-                'metricas': calcular_metricas(sprint_b)
+                'metricas': metricas_b
             },
-            'diferenca_tempo': abs(calcular_metricas(sprint_a)['tempo_total'] - 
-                                  calcular_metricas(sprint_b)['tempo_total']),
-            'diferenca_complexidade': abs(calcular_metricas(sprint_a)['complexidade_total'] - 
-                                        calcular_metricas(sprint_b)['complexidade_total'])
+            'diferenca_tempo': abs(metricas_a['tempo_total'] - metricas_b['tempo_total']),
+            'diferenca_complexidade': abs(metricas_a['complexidade_total'] - metricas_b['complexidade_total'])
         }
     
     def analisar_complexidade_algoritmos(self, n_max=10000):
@@ -204,7 +207,7 @@ class OrdenadorHabilidades:
         }
         
         # Análise prática para diferentes tamanhos
-        tamanhos_testar = [100, 500, 1000, 5000, 10000]
+        tamanhos_testar = [100, 500, 1000, 5000]
         resultados_tempo = defaultdict(list)
         
         for tamanho in tamanhos_testar:
@@ -212,16 +215,21 @@ class OrdenadorHabilidades:
                 continue
                 
             # Gerar dados de teste
-            dados_teste = [{'id': i, 'valor': random.randint(1, 100)} for i in range(tamanho)]
+            dados_teste = [{'id': i, 'valor': random.randint(1, 100), 
+                        'Complexidade': random.randint(1, 10)} for i in range(tamanho)]
             
-            # Medir tempos
-            tempo_merge = timeit.timeit(lambda: self.merge_sort(dados_teste.copy(), 'valor'), number=5)
-            tempo_quick = timeit.timeit(lambda: self.quick_sort(dados_teste.copy(), 'valor'), number=5)
-            tempo_nativo = timeit.timeit(lambda: self.ordenar_nativo(dados_teste.copy(), 'valor'), number=5)
-            
-            resultados_tempo['merge_sort'].append(tempo_merge)
-            resultados_tempo['quick_sort'].append(tempo_quick)
-            resultados_tempo['sort_nativo'].append(tempo_nativo)
+            try:
+                # Medir tempos
+                tempo_merge = timeit.timeit(lambda: self.merge_sort(dados_teste.copy(), 'Complexidade'), number=3)
+                tempo_quick = timeit.timeit(lambda: self.quick_sort(dados_teste.copy(), 'Complexidade'), number=3)
+                tempo_nativo = timeit.timeit(lambda: self.ordenar_nativo(dados_teste.copy(), 'Complexidade'), number=3)
+                
+                resultados_tempo['merge_sort'].append(tempo_merge)
+                resultados_tempo['quick_sort'].append(tempo_quick)
+                resultados_tempo['sort_nativo'].append(tempo_nativo)
+            except Exception as e:
+                logging.warning(f"Erro no tamanho {tamanho}: {e}")
+                continue
         
         analise['resultados_praticos'] = {
             'tamanhos': tamanhos_testar[:len(resultados_tempo['merge_sort'])],
@@ -230,68 +238,86 @@ class OrdenadorHabilidades:
         
         return analise
     
-    def comparar_desempenho(self, n_repeticoes=100):
+    def comparar_desempenho(self, n_repeticoes=50):
         """
         Compara o desempenho dos algoritmos para o conjunto de habilidades real
         """
         logging.info("Comparando desempenho dos algoritmos de ordenação...")
         
         resultados = {}
-        criterios = ['Complexidade', 'Tempo', 'Valor', 'razao_vt']
+        criterios = ['Complexidade', 'Tempo', 'Valor', 'Razao_VT']
         
         for criterio in criterios:
             logging.info(f"Testando critério: {criterio}")
             
-            # Medir tempos
-            tempo_merge = timeit.timeit(
-                lambda: self.merge_sort(self.habilidades_lista.copy(), criterio), 
-                number=n_repeticoes
-            )
-            
-            tempo_quick = timeit.timeit(
-                lambda: self.quick_sort(self.habilidades_lista.copy(), criterio), 
-                number=n_repeticoes
-            )
-            
-            tempo_nativo = timeit.timeit(
-                lambda: self.ordenar_nativo(self.habilidades_lista.copy(), criterio), 
-                number=n_repeticoes
-            )
-            
-            # Verificar correção
-            resultado_merge = self.merge_sort(self.habilidades_lista.copy(), criterio)
-            resultado_quick = self.quick_sort(self.habilidades_lista.copy(), criterio)
-            resultado_nativo = self.ordenar_nativo(self.habilidades_lista.copy(), criterio)
-            
-            # Verificar se todos produzem a mesma ordenação
-            correto_merge_quick = all(
-                m[criterio if criterio != 'razao_vt' else 'Valor'] == q[criterio if criterio != 'razao_vt' else 'Valor'] 
-                for m, q in zip(resultado_merge, resultado_quick)
-            )
-            
-            correto_merge_nativo = all(
-                m[criterio if criterio != 'razao_vt' else 'Valor'] == n[criterio if criterio != 'razao_vt' else 'Valor'] 
-                for m, n in zip(resultado_merge, resultado_nativo)
-            )
-            
-            resultados[criterio] = {
-                'merge_sort': {
-                    'tempo': tempo_merge,
-                    'tempo_medio': tempo_merge / n_repeticoes,
-                    'correto': correto_merge_quick and correto_merge_nativo
-                },
-                'quick_sort': {
-                    'tempo': tempo_quick,
-                    'tempo_medio': tempo_quick / n_repeticoes,
-                    'correto': correto_merge_quick
-                },
-                'sort_nativo': {
-                    'tempo': tempo_nativo,
-                    'tempo_medio': tempo_nativo / n_repeticoes,
-                    'correto': correto_merge_nativo
-                },
-                'ordenacao_correta': correto_merge_quick and correto_merge_nativo
-            }
+            try:
+                # Medir tempos
+                tempo_merge = timeit.timeit(
+                    lambda: self.merge_sort(self.habilidades_lista.copy(), criterio), 
+                    number=n_repeticoes
+                )
+                
+                tempo_quick = timeit.timeit(
+                    lambda: self.quick_sort(self.habilidades_lista.copy(), criterio), 
+                    number=n_repeticoes
+                )
+                
+                tempo_nativo = timeit.timeit(
+                    lambda: self.ordenar_nativo(self.habilidades_lista.copy(), criterio), 
+                    number=n_repeticoes
+                )
+                
+                # Verificar correção
+                resultado_merge = self.merge_sort(self.habilidades_lista.copy(), criterio)
+                resultado_quick = self.quick_sort(self.habilidades_lista.copy(), criterio)
+                resultado_nativo = self.ordenar_nativo(self.habilidades_lista.copy(), criterio)
+                
+                # Extrair valores para comparação
+                def extrair_valores(resultado, criterio):
+                    if criterio == 'Complexidade':
+                        return [r['Complexidade'] for r in resultado]
+                    elif criterio == 'Tempo':
+                        return [r['Tempo'] for r in resultado]
+                    elif criterio == 'Valor':
+                        return [r['Valor'] for r in resultado]
+                    elif criterio == 'Razao_VT':
+                        return [r['Razao_VT'] for r in resultado]
+                
+                valores_merge = extrair_valores(resultado_merge, criterio)
+                valores_quick = extrair_valores(resultado_quick, criterio)
+                valores_nativo = extrair_valores(resultado_nativo, criterio)
+                
+                # Verificar se todos produzem a mesma ordenação
+                correto_merge_quick = valores_merge == valores_quick
+                correto_merge_nativo = valores_merge == valores_nativo
+                
+                resultados[criterio] = {
+                    'merge_sort': {
+                        'tempo': tempo_merge,
+                        'tempo_medio': tempo_merge / n_repeticoes,
+                        'correto': correto_merge_quick and correto_merge_nativo
+                    },
+                    'quick_sort': {
+                        'tempo': tempo_quick,
+                        'tempo_medio': tempo_quick / n_repeticoes,
+                        'correto': correto_merge_quick
+                    },
+                    'sort_nativo': {
+                        'tempo': tempo_nativo,
+                        'tempo_medio': tempo_nativo / n_repeticoes,
+                        'correto': correto_merge_nativo
+                    },
+                    'ordenacao_correta': correto_merge_quick and correto_merge_nativo
+                }
+                
+            except Exception as e:
+                logging.error(f"Erro no critério {criterio}: {e}")
+                resultados[criterio] = {
+                    'merge_sort': {'tempo': 0, 'tempo_medio': 0, 'correto': False},
+                    'quick_sort': {'tempo': 0, 'tempo_medio': 0, 'correto': False},
+                    'sort_nativo': {'tempo': 0, 'tempo_medio': 0, 'correto': False},
+                    'ordenacao_correta': False
+                }
         
         return resultados
     
@@ -311,7 +337,7 @@ class OrdenadorHabilidades:
         
         # 3. Comparar desempenho dos algoritmos
         print("⚡ Comparando desempenho dos algoritmos...")
-        comparacao_desempenho = self.comparar_desempenho(n_repeticoes=100)
+        comparacao_desempenho = self.comparar_desempenho(n_repeticoes=50)
         
         # 4. Análise de complexidade teórica
         print("🔍 Analisando complexidade teórica...")
@@ -320,8 +346,12 @@ class OrdenadorHabilidades:
         # 5. Ordenar por outros critérios para análise
         print("📈 Ordenando por outros critérios...")
         ordenacoes_alternativas = {}
-        for criterio in ['Tempo', 'Valor', 'razao_vt']:
-            ordenacoes_alternativas[criterio] = self.merge_sort(self.habilidades_lista.copy(), criterio)
+        for criterio in ['Tempo', 'Valor', 'Razao_VT']:
+            try:
+                ordenacoes_alternativas[criterio] = self.merge_sort(self.habilidades_lista.copy(), criterio)
+            except Exception as e:
+                logging.warning(f"Erro ao ordenar por {criterio}: {e}")
+                ordenacoes_alternativas[criterio] = []
         
         return {
             'ordenacao_principal': habilidades_ordenadas_complexidade,
@@ -336,7 +366,7 @@ class OrdenadorHabilidades:
         Gera relatório detalhado do Desafio 4
         """
         print("=" * 80)
-        print("DESAFIO 4 — TRILHAS PARALAELAS - RELATÓRIO DETALHADO")
+        print("DESAFIO 4 — TRILHAS PARALELAS - RELATÓRIO DETALHADO")
         print("=" * 80)
         print("🎯 OBJETIVO: Ordenar 12 habilidades por Complexidade usando Merge Sort")
         print("📊 DIVISÃO: Sprint A (1-6) e Sprint B (7-12)")
@@ -378,9 +408,9 @@ class OrdenadorHabilidades:
         print("🏆 HABILIDADES ORDENADAS (Crescente por Complexidade):")
         for i, habilidade in enumerate(habilidades_ordenadas, 1):
             print(f"  {i:2d}. {habilidade['ID']}: {habilidade['Nome']}")
-            print(f"       Complexidade: {habilidade['Complexidade']} | "
-                  f"Tempo: {habilidade['Tempo']}h | Valor: {habilidade['Valor']} | "
-                  f"V/T: {habilidade['Valor']/habilidade['Tempo']:.3f}")
+            print(f"       Complexidade: {habilidade['Complexidade']} | ")
+            print(f"Tempo: {habilidade['Tempo']}h | Valor: {habilidade['Valor']} | ")
+            print(f"V/T: {habilidade['Razao_VT']:.3f}")
         print()
         
         # Análise das Sprints
@@ -392,15 +422,15 @@ class OrdenadorHabilidades:
         for i, habilidade in enumerate(sprints['sprint_a']['habilidades'], 1):
             print(f"     {i}. {habilidade['ID']} - C:{habilidade['Complexidade']}")
         metricas_a = sprints['sprint_a']['metricas']
-        print(f"     📈 Métricas: T:{metricas_a['tempo_total']}h, V:{metricas_a['valor_total']}, "
-              f"C médio:{metricas_a['complexidade_media']:.1f}")
+        print(f"     📈 Métricas: T:{metricas_a['tempo_total']}h, V:{metricas_a['valor_total']}, ")
+        print(f"C médio:{metricas_a['complexidade_media']:.1f}")
         
         print("\n🚀 SPRINT B (Habilidades 7-12):")
         for i, habilidade in enumerate(sprints['sprint_b']['habilidades'], 1):
             print(f"     {i}. {habilidade['ID']} - C:{habilidade['Complexidade']}")
         metricas_b = sprints['sprint_b']['metricas']
-        print(f"     📈 Métricas: T:{metricas_b['tempo_total']}h, V:{metricas_b['valor_total']}, "
-              f"C médio:{metricas_b['complexidade_media']:.1f}")
+        print(f"     📈 Métricas: T:{metricas_b['tempo_total']}h, V:{metricas_b['valor_total']}, ")
+        print(f"C médio:{metricas_b['complexidade_media']:.1f}")
         
         print(f"\n⚖️  BALANCEAMENTO ENTRE SPRINTS:")
         print(f"   Diferença de tempo: {sprints['diferenca_tempo']}h")
@@ -413,7 +443,7 @@ class OrdenadorHabilidades:
         print()
         
         # Comparação de desempenho
-        print("⚡ COMPARAÇÃO DE DESEMPENHO (100 execuções):")
+        print("⚡ COMPARAÇÃO DE DESEMPENHO (50 execuções):")
         print("-" * 50)
         desempenho = analise_completa['comparacao_desempenho']['Complexidade']
         
@@ -431,14 +461,17 @@ class OrdenadorHabilidades:
         # Análise de velocidade relativa
         tempo_merge = desempenho['merge_sort']['tempo_medio']
         tempo_nativo = desempenho['sort_nativo']['tempo_medio']
-        velocidade_relativa = tempo_nativo / tempo_merge if tempo_merge > 0 else 0
         
-        print(f"\n   📈 Merge Sort é {velocidade_relativa:.1f}x mais lento que Sort Nativo")
-        
-        if velocidade_relativa < 5:
-            print("   ✅ DESEMPENHO ACEITÁVEL: Diferença pequena para conjunto pequeno")
+        if tempo_merge > 0:
+            velocidade_relativa = tempo_nativo / tempo_merge
+            print(f"\n   📈 Merge Sort é {velocidade_relativa:.1f}x mais lento que Sort Nativo")
+            
+            if velocidade_relativa < 5:
+                print("   ✅ DESEMPENHO ACEITÁVEL: Diferença pequena para conjunto pequeno")
+            else:
+                print("   ⚠️  DESEMPENHO MODERADO: Implementação pode ser otimizada")
         else:
-            print("   ⚠️  DESEMPENHO MODERADO: Implementação pode ser otimizada")
+            print("\n   ⚠️  Não foi possível calcular velocidade relativa")
         print()
         
         # Ordenações alternativas
@@ -447,9 +480,12 @@ class OrdenadorHabilidades:
         ordenacoes_alt = analise_completa['ordenacoes_alternativas']
         
         for criterio, habilidades in ordenacoes_alt.items():
-            primeiro = habilidades[0]['ID']
-            ultimo = habilidades[-1]['ID']
-            print(f"   {criterio.upper():12}: {primeiro} → ... → {ultimo}")
+            if habilidades:
+                primeiro = habilidades[0]['ID']
+                ultimo = habilidades[-1]['ID']
+                print(f"   {criterio.upper():12}: {primeiro} → ... → {ultimo}")
+            else:
+                print(f"   {criterio.upper():12}: ❌ Erro na ordenação")
         
         print(f"\n💡 INSIGHTS E RECOMENDAÇÕES:")
         print("-" * 30)
@@ -462,8 +498,8 @@ class OrdenadorHabilidades:
         return {
             'analise_completa': analise_completa,
             'sprints_balanceadas': (sprints['diferenca_tempo'] < 50 and 
-                                  sprints['diferenca_complexidade'] < 10),
-            'velocidade_relativa': velocidade_relativa
+                                sprints['diferenca_complexidade'] < 10),
+            'velocidade_relativa': tempo_nativo / tempo_merge if tempo_merge > 0 else 0
         }
     
     def gerar_visualizacao_completa(self, analise_completa):
@@ -474,33 +510,38 @@ class OrdenadorHabilidades:
         
         # Gráfico 1: Habilidades Ordenadas por Complexidade
         habilidades_ordenadas = analise_completa['ordenacao_principal']
-        ids = [h['ID'] for h in habilidades_ordenadas]
-        complexidades = [h['Complexidade'] for h in habilidades_ordenadas]
-        tempos = [h['Tempo'] for h in habilidades_ordenadas]
-        valores = [h['Valor'] for h in habilidades_ordenadas]
-        
-        x = np.arange(len(ids))
-        largura = 0.35
-        
-        bars1 = ax1.bar(x - largura/2, complexidades, largura, label='Complexidade', 
-                       color='lightcoral', edgecolor='darkred')
-        bars2 = ax1.bar(x + largura/2, tempos, largura, label='Tempo (h)', 
-                       color='lightblue', edgecolor='darkblue', alpha=0.7)
-        
-        ax1.set_title('Habilidades Ordenadas por Complexidade\n(Sprint A: 1-6, Sprint B: 7-12)')
-        ax1.set_xlabel('Habilidade (Ordenada)')
-        ax1.set_ylabel('Complexidade / Tempo (h)')
-        ax1.set_xticks(x)
-        ax1.set_xticklabels(ids, rotation=45)
-        ax1.legend()
-        ax1.grid(axis='y', alpha=0.3)
-        
-        # Adicionar linha divisória entre sprints
-        ax1.axvline(5.5, color='red', linestyle='--', alpha=0.7, linewidth=2, label='Divisão Sprints')
-        ax1.text(2.5, max(complexidades) * 0.9, 'SPRINT A', ha='center', va='center', 
-                fontweight='bold', fontsize=12, color='darkgreen', bbox=dict(boxstyle="round,pad=0.3", facecolor="lightgreen", alpha=0.7))
-        ax1.text(8.5, max(complexidades) * 0.9, 'SPRINT B', ha='center', va='center', 
-                fontweight='bold', fontsize=12, color='darkblue', bbox=dict(boxstyle="round,pad=0.3", facecolor="lightblue", alpha=0.7))
+        if habilidades_ordenadas:
+            ids = [h['ID'] for h in habilidades_ordenadas]
+            complexidades = [h['Complexidade'] for h in habilidades_ordenadas]
+            tempos = [h['Tempo'] for h in habilidades_ordenadas]
+            
+            x = np.arange(len(ids))
+            largura = 0.35
+            
+            bars1 = ax1.bar(x - largura/2, complexidades, largura, label='Complexidade', 
+                        color='lightcoral', edgecolor='darkred')
+            bars2 = ax1.bar(x + largura/2, tempos, largura, label='Tempo (h)', 
+                        color='lightblue', edgecolor='darkblue', alpha=0.7)
+            
+            ax1.set_title('Habilidades Ordenadas por Complexidade\n(Sprint A: 1-6, Sprint B: 7-12)')
+            ax1.set_xlabel('Habilidade (Ordenada)')
+            ax1.set_ylabel('Complexidade / Tempo (h)')
+            ax1.set_xticks(x)
+            ax1.set_xticklabels(ids, rotation=45)
+            ax1.legend()
+            ax1.grid(axis='y', alpha=0.3)
+            
+            # Adicionar linha divisória entre sprints
+            ax1.axvline(5.5, color='red', linestyle='--', alpha=0.7, linewidth=2, label='Divisão Sprints')
+            ax1.text(2.5, max(complexidades) * 0.9, 'SPRINT A', ha='center', va='center', 
+                    fontweight='bold', fontsize=12, color='darkgreen', bbox=dict(boxstyle="round,pad=0.3", facecolor="lightgreen", alpha=0.7))
+            ax1.text(8.5, max(complexidades) * 0.9, 'SPRINT B', ha='center', va='center', 
+                    fontweight='bold', fontsize=12, color='darkblue', bbox=dict(boxstyle="round,pad=0.3", facecolor="lightblue", alpha=0.7))
+        else:
+            ax1.text(0.5, 0.5, 'NENHUM DADO\nPARA EXIBIR', 
+                    ha='center', va='center', transform=ax1.transAxes, 
+                    fontsize=16, weight='bold', color='red')
+            ax1.set_title('Habilidades Ordenadas por Complexidade')
         
         # Gráfico 2: Comparação de Desempenho dos Algoritmos
         desempenho = analise_completa['comparacao_desempenho']['Complexidade']
@@ -514,7 +555,7 @@ class OrdenadorHabilidades:
         cores = ['lightcoral', 'lightgreen', 'lightblue']
         bars = ax2.bar(algoritmos, tempos_medios, color=cores, edgecolor=['darkred', 'darkgreen', 'darkblue'], alpha=0.7)
         
-        ax2.set_title('Comparação de Desempenho\n(Tempo Médio por Execução - 100 iterações)')
+        ax2.set_title('Comparação de Desempenho\n(Tempo Médio por Execução - 50 iterações)')
         ax2.set_ylabel('Tempo (segundos)')
         ax2.grid(axis='y', alpha=0.3)
         
@@ -525,59 +566,46 @@ class OrdenadorHabilidades:
         
         # Gráfico 3: Análise das Sprints
         sprints = analise_completa['sprints']
-        metricas_a = sprints['sprint_a']['metricas']
-        metricas_b = sprints['sprint_b']['metricas']
-        
-        categorias = ['Tempo Total', 'Valor Total', 'Complex. Total', 'Complex. Média']
-        valores_a = [metricas_a['tempo_total'], metricas_a['valor_total'], 
-                    metricas_a['complexidade_total'], metricas_a['complexidade_media']]
-        valores_b = [metricas_b['tempo_total'], metricas_b['valor_total'], 
-                    metricas_b['complexidade_total'], metricas_b['complexidade_media']]
-        
-        x = np.arange(len(categorias))
-        largura = 0.35
-        
-        bars1 = ax3.bar(x - largura/2, valores_a, largura, label='Sprint A', 
-                       color='lightgreen', edgecolor='darkgreen')
-        bars2 = ax3.bar(x + largura/2, valores_b, largura, label='Sprint B', 
-                       color='lightblue', edgecolor='darkblue')
-        
-        ax3.set_title('Comparação entre Sprints A e B\n(Balanceamento de Carga)')
-        ax3.set_xlabel('Métrica')
-        ax3.set_ylabel('Valor')
-        ax3.set_xticks(x)
-        ax3.set_xticklabels(categorias)
-        ax3.legend()
-        ax3.grid(axis='y', alpha=0.3)
-        
-        # Gráfico 4: Complexidade Teórica vs Prática
-        complexidade = analise_completa['analise_complexidade']
-        if 'resultados_praticos' in complexidade:
-            dados_praticos = complexidade['resultados_praticos']
-            tamanhos = dados_praticos['tamanhos']
+        if sprints['sprint_a']['habilidades'] and sprints['sprint_b']['habilidades']:
+            metricas_a = sprints['sprint_a']['metricas']
+            metricas_b = sprints['sprint_b']['metricas']
             
-            ax4.plot(tamanhos, dados_praticos['tempos']['merge_sort'], 
-                    marker='o', label='Merge Sort', linewidth=2)
-            ax4.plot(tamanhos, dados_praticos['tempos']['quick_sort'], 
-                    marker='s', label='Quick Sort', linewidth=2)
-            ax4.plot(tamanhos, dados_praticos['tempos']['sort_nativo'], 
-                    marker='^', label='Sort Nativo', linewidth=2)
+            categorias = ['Tempo Total', 'Valor Total', 'Complex. Total', 'Complex. Média']
+            valores_a = [metricas_a['tempo_total'], metricas_a['valor_total'], 
+                        metricas_a['complexidade_total'], metricas_a['complexidade_media']]
+            valores_b = [metricas_b['tempo_total'], metricas_b['valor_total'], 
+                        metricas_b['complexidade_total'], metricas_b['complexidade_media']]
             
-            ax4.set_title('Desempenho em Diferentes Tamanhos de Entrada\n(Escala Logarítmica)')
-            ax4.set_xlabel('Tamanho do Conjunto (n)')
-            ax4.set_ylabel('Tempo de Execução (segundos)')
-            ax4.set_xscale('log')
-            ax4.set_yscale('log')
-            ax4.legend()
-            ax4.grid(True, alpha=0.3)
+            x = np.arange(len(categorias))
+            largura = 0.35
+            
+            bars1 = ax3.bar(x - largura/2, valores_a, largura, label='Sprint A', 
+                        color='lightgreen', edgecolor='darkgreen')
+            bars2 = ax3.bar(x + largura/2, valores_b, largura, label='Sprint B', 
+                        color='lightblue', edgecolor='darkblue')
+            
+            ax3.set_title('Comparação entre Sprints A e B\n(Balanceamento de Carga)')
+            ax3.set_xlabel('Métrica')
+            ax3.set_ylabel('Valor')
+            ax3.set_xticks(x)
+            ax3.set_xticklabels(categorias)
+            ax3.legend()
+            ax3.grid(axis='y', alpha=0.3)
         else:
-            # Gráfico alternativo: Ordenações por Diferentes Critérios
-            ordenacoes_alt = analise_completa['ordenacoes_alternativas']
-            criterios = list(ordenacoes_alt.keys())
-            
+            ax3.text(0.5, 0.5, 'DADOS DE SPRINTS\nNÃO DISPONÍVEIS', 
+                    ha='center', va='center', transform=ax3.transAxes, 
+                    fontsize=16, weight='bold', color='red')
+            ax3.set_title('Comparação entre Sprints A e B')
+        
+        # Gráfico 4: Ordenações por Diferentes Critérios
+        ordenacoes_alt = analise_completa['ordenacoes_alternativas']
+        criterios_validos = [c for c, h in ordenacoes_alt.items() if h]
+        
+        if criterios_validos:
             # Calcular métricas para cada ordenação
             metricas_ordenacoes = []
-            for criterio, habilidades in ordenacoes_alt.items():
+            for criterio in criterios_validos:
+                habilidades = ordenacoes_alt[criterio]
                 primeira = habilidades[0]['ID']
                 ultima = habilidades[-1]['ID']
                 complexidade_prim = habilidades[0]['Complexidade']
@@ -593,8 +621,8 @@ class OrdenadorHabilidades:
             diff_complexidades = [c['diff_complexidade'] for c in metricas_ordenacoes]
             
             bars = ax4.bar(criterios_nomes, diff_complexidades, 
-                          color=['lightcoral', 'lightgreen', 'lightblue', 'lightyellow'],
-                          edgecolor=['darkred', 'darkgreen', 'darkblue', 'darkorange'])
+                        color=['lightcoral', 'lightgreen', 'lightblue', 'lightyellow'],
+                        edgecolor=['darkred', 'darkgreen', 'darkblue', 'darkorange'])
             
             ax4.set_title('Amplitude de Complexidade por Critério de Ordenação')
             ax4.set_ylabel('Diferença de Complexidade (Última - Primeira)')
@@ -603,6 +631,11 @@ class OrdenadorHabilidades:
             for bar, diff in zip(bars, diff_complexidades):
                 ax4.text(bar.get_x() + bar.get_width()/2., bar.get_height() + 0.1, 
                         f'{diff}', ha='center', va='bottom', fontweight='bold')
+        else:
+            ax4.text(0.5, 0.5, 'NENHUMA ORDENAÇÃO\nALTERNATIVA VÁLIDA', 
+                    ha='center', va='center', transform=ax4.transAxes, 
+                    fontsize=16, weight='bold', color='red')
+            ax4.set_title('Ordenações por Diferentes Critérios')
         
         plt.tight_layout()
         return fig

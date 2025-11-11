@@ -61,7 +61,7 @@ class OtimizadorCaminhoDP:
         for no in self.ordenacao_topologica:
             dp[no] = np.zeros((self.tempo_max + 1, self.complexidade_max + 1))
             caminho[no] = [[[] for _ in range(self.complexidade_max + 1)] 
-                          for _ in range(self.tempo_max + 1)]
+                        for _ in range(self.tempo_max + 1)]
             pre_requisitos_map[no] = self.grafo[no]['Pre_Reqs']
         
         # Processar cada nó na ordem topológica
@@ -286,8 +286,8 @@ class OtimizadorCaminhoDP:
         print(f"Caminho Ótimo: {' → '.join(resultado_deterministico['caminho_otimo'])}")
         print(f"Tempo Utilizado: {resultado_deterministico['tempo_utilizado']:.1f}h")
         print(f"Complexidade Utilizada: {resultado_deterministico['complexidade_utilizada']:.1f}")
-        print(f"Recursos Restantes: T={resultado_deterministico['recursos_restantes']['tempo']}h, "
-              f"C={resultado_deterministico['recursos_restantes']['complexidade']}")
+        print(f"Recursos Restantes: T={resultado_deterministico['recursos_restantes']['tempo']}h, ")
+        print(f"C={resultado_deterministico['recursos_restantes']['complexidade']}")
         print(f"Eficiência (V/T): {resultado_deterministico['eficiencia_tempo']:.4f}")
         print(f"Eficiência (V/C): {resultado_deterministico['eficiencia_complexidade']:.4f}")
         print()
@@ -306,9 +306,9 @@ class OtimizadorCaminhoDP:
             valor_acumulado += dados['Valor']
             
             print(f"  {i}. {habilidade} - {dados['Nome']}")
-            print(f"     ⏱️  {dados['Tempo']}h (Acum: {tempo_acumulado}h) | "
-                  f"💰 {dados['Valor']} (Acum: {valor_acumulado}) | "
-                  f"🎯 C: {dados['Complexidade']} (Acum: {complexidade_acumulada})")
+            print(f"     ⏱️  {dados['Tempo']}h (Acum: {tempo_acumulado}h) | ")
+            print(f"💰 {dados['Valor']} (Acum: {valor_acumulado}) | ")
+            print(f"🎯 C: {dados['Complexidade']} (Acum: {complexidade_acumulada})")
         print()
         
         print("🎲 ANÁLISE ESTOCÁSTICA (MONTE CARLO):")
@@ -318,8 +318,8 @@ class OtimizadorCaminhoDP:
         print(f"Valor Esperado (E[V]): {resultado_monte_carlo['media_valor']:.2f}")
         print(f"Desvio Padrão (σ): {resultado_monte_carlo['desvio_padrao_valor']:.2f}")
         print(f"Coeficiente de Variação: {resultado_monte_carlo['coef_variacao']:.2%}")
-        print(f"Intervalo 95% Confiança: [{comparacao['estocastico']['intervalo_confianca_95'][0]:.2f}, "
-              f"{comparacao['estocastico']['intervalo_confianca_95'][1]:.2f}]")
+        print(f"Intervalo 95% Confiança: [{comparacao['estocastico']['intervalo_confianca_95'][0]:.2f}, ")
+        print(f"{comparacao['estocastico']['intervalo_confianca_95'][1]:.2f}]")
         print(f"Valor Mínimo Simulado: {resultado_monte_carlo['valor_minimo']:.2f}")
         print(f"Valor Máximo Simulado: {resultado_monte_carlo['valor_maximo']:.2f}")
         print(f"Tempo Médio Utilizado: {resultado_monte_carlo['media_tempo']:.1f}h")
@@ -344,7 +344,7 @@ class OtimizadorCaminhoDP:
         
         print(f"Diferença Relativa: {diferenca:+.2f}% {emoji} ({status})")
         print(f"Robustez da Solução: {comparacao['comparacao']['robustez']} "
-              f"(CV = {comparacao['estocastico']['coef_variacao']:.2%})")
+            f"(CV = {comparacao['estocastico']['coef_variacao']:.2%})")
         print(f"Confiança na Solução: {'ALTA' if comparacao['comparacao']['taxa_sucesso_simulacoes'] > 0.9 else 'MÉDIA' if comparacao['comparacao']['taxa_sucesso_simulacoes'] > 0.7 else 'BAIXA'}")
         
         return {
@@ -362,20 +362,20 @@ class OtimizadorCaminhoDP:
         # Gráfico 1: Distribuição Monte Carlo
         valores = resultado_monte_carlo['valores_simulados']
         n, bins, patches = ax1.hist(valores, bins=30, color='steelblue', 
-                                   edgecolor='black', alpha=0.7, density=True)
+                                edgecolor='black', alpha=0.7, density=True)
         
         media = resultado_monte_carlo['media_valor']
         std = resultado_monte_carlo['desvio_padrao_valor']
         deterministico = resultado_deterministico['valor_maximo']
         
         ax1.axvline(media, color='red', linestyle='-', linewidth=2, 
-                   label=f'Média Estocástica = {media:.2f}')
+                label=f'Média Estocástica = {media:.2f}')
         ax1.axvline(deterministico, color='green', linestyle='--', linewidth=2, 
-                   label=f'Determinístico = {deterministico:.2f}')
+                label=f'Determinístico = {deterministico:.2f}')
         ax1.axvline(media + std, color='orange', linestyle=':', linewidth=1.5, 
-                   label=f'+1σ = {media + std:.2f}')
+                label=f'+1σ = {media + std:.2f}')
         ax1.axvline(media - std, color='orange', linestyle=':', linewidth=1.5, 
-                   label=f'-1σ = {media - std:.2f}')
+                label=f'-1σ = {media - std:.2f}')
         
         ax1.set_title('Distribuição do Valor Total - Simulação Monte Carlo\n(1000 cenários com incerteza ±10%)')
         ax1.set_xlabel('Valor Total do Caminho')
@@ -414,7 +414,7 @@ class OtimizadorCaminhoDP:
         # Gráfico 3: Utilização de Recursos
         recursos = ['Tempo', 'Complexidade']
         utilizados = [resultado_deterministico['tempo_utilizado'], 
-                     resultado_deterministico['complexidade_utilizada']]
+                    resultado_deterministico['complexidade_utilizada']]
         limites = [self.tempo_max, self.complexidade_max]
         utilizacao_percent = [u/l*100 for u, l in zip(utilizados, limites)]
         
