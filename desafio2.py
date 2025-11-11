@@ -40,17 +40,35 @@ class VerificadorDesafio2:
         return self.relatorios_validacao
 
     def calcular_custo_ordem(self, ordem):
+        """
+        Calcula o custo total para uma dada permutação, garantindo que o tempo
+        de cada habilidade seja contado apenas uma vez.
+        """
         tempo_total = 0
         habilidades_adquiridas = set()
-        for hab in ordem:
-            # Adquire pré-requisitos que não estão disponíveis
-            for pre in self.habilidades[hab]['Pre_Reqs']:
-                if pre not in habilidades_adquiridas:
-                    tempo_total += self.habilidades[pre]['Tempo']
-                    habilidades_adquiridas.add(pre)
-            # Adquire a habilidade principal
-            tempo_total += self.habilidades[hab]['Tempo']
-            habilidades_adquiridas.add(hab)
+
+        # Função auxiliar para adquirir uma habilidade e suas dependências recursivamente
+        def adquirir_habilidade(hab_id):
+            nonlocal tempo_total, habilidades_adquiridas
+            
+            # Se já foi adquirida, não há custo.
+            if hab_id in habilidades_adquiridas:
+                return
+
+            # Primeiro, garante que todos os pré-requisitos sejam adquiridos
+            for pre_req in self.habilidades[hab_id].get('Pre_Reqs', []):
+                adquirir_habilidade(pre_req)
+
+            # Após garantir os pré-requisitos, adquire a habilidade atual
+            # (se ela ainda não tiver sido adquirida como pré-requisito de outra)
+            if hab_id not in habilidades_adquiridas:
+                tempo_total += self.habilidades[hab_id]['Tempo']
+                habilidades_adquiridas.add(hab_id)
+
+        # Itera sobre a ordem da permutação, adquirindo cada habilidade crítica
+        for habilidade_critica in ordem:
+            adquirir_habilidade(habilidade_critica)
+            
         return tempo_total
 
     def analisar_permutacoes(self):
