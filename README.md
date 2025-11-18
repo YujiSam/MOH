@@ -106,11 +106,12 @@ pip install -r requirements.txt
 
 📦 Dependências Principais
 
-matplotlib>=3.5.0
 numpy>=1.21.0
+matplotlib>=3.5.0
+pandas>=1.3.0
 networkx>=2.6.0
 scipy>=1.7.0
-pandas>=1.3.0
+psutil>=5.9.0
 
 🚀 Como Executar
 
