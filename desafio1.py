@@ -4,6 +4,35 @@ import random
 from collections import deque, defaultdict
 import matplotlib.pyplot as plt
 import time
+import functools
+import tracemalloc
+
+def medir_tempo_memoria(func):
+    """Decorator que mede tempo total de execução e pico de memória (tracemalloc)."""
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        tracemalloc.start()
+        t0 = time.time()
+        resultado = None
+        try:
+            resultado = func(*args, **kwargs)
+            return resultado
+        finally:
+            elapsed = time.time() - t0
+            current, peak = tracemalloc.get_traced_memory()
+            tracemalloc.stop()
+            msg = f"[METRICS] {func.__name__} -> tempo: {elapsed:.4f}s, pico_memoria: {peak} bytes"
+            logging.info(msg)
+            print(msg)  # print explícito para o usuário
+            # injeta métricas em retorno do tipo dict, se aplicável
+            try:
+                if isinstance(resultado, dict):
+                    resultado.setdefault('metrics', {})
+                    resultado['metrics']['exec_time_seconds'] = elapsed
+                    resultado['metrics']['peak_memory_bytes'] = peak
+            except Exception:
+                pass
+    return wrapper
 
 class OtimizadorCaminhoDP:
     def __init__(self, grafo, tempo_max=350, complexidade_max=30, objetivo='S6'):
@@ -152,6 +181,7 @@ class OtimizadorCaminhoDP:
                 return False
         return True
     
+    @medir_tempo_memoria
     def simulacao_monte_carlo(self, n_simulacoes=1000):
         """
         Simulação Monte Carlo com incerteza nos parâmetros
@@ -487,33 +517,39 @@ def executar_desafio1(grafo, tempo_max=350, complexidade_max=30, n_simulacoes=10
             objetivo='S6'
         )
         
-        # Executar Programação Dinâmica
-        print("🧮 Executando Programação Dinâmica...")
-        resultado_dp = otimizador.knapsack_multidimensional_dp()
+        # medir toda a execução do desafio (incluindo DP e Monte Carlo)
+        @medir_tempo_memoria
+        def _exec_total():
+            # Executar Programação Dinâmica
+            print("🧮 Executando Programação Dinâmica...")
+            resultado_dp = otimizador.knapsack_multidimensional_dp()
+            
+            # Executar Monte Carlo (medido como um todo pela decoração acima da função)
+            print("🎲 Executando simulação Monte Carlo...")
+            resultado_mc = otimizador.simulacao_monte_carlo(n_simulacoes=n_simulacoes)
+            
+            # Comparar resultados
+            comparacao = otimizador.comparar_solucoes_deterministica_estocastica(resultado_dp, resultado_mc)
+            
+            # Gerar relatório
+            relatorio = otimizador.gerar_relatorio_detalhado(resultado_dp, resultado_mc, comparacao)
+            
+            # Gerar visualização
+            print("📊 Gerando visualizações...")
+            fig = otimizador.gerar_visualizacao_completa(resultado_dp, resultado_mc, comparacao)
+            
+            logging.info("Desafio 1 executado com sucesso")
+            
+            return {
+                'sucesso': True,
+                'deterministico': resultado_dp,
+                'monte_carlo': resultado_mc,
+                'comparacao': comparacao,
+                'figura': fig
+            }
         
-        # Executar Monte Carlo
-        print("🎲 Executando simulação Monte Carlo...")
-        resultado_mc = otimizador.simulacao_monte_carlo(n_simulacoes=n_simulacoes)
-        
-        # Comparar resultados
-        comparacao = otimizador.comparar_solucoes_deterministica_estocastica(resultado_dp, resultado_mc)
-        
-        # Gerar relatório
-        relatorio = otimizador.gerar_relatorio_detalhado(resultado_dp, resultado_mc, comparacao)
-        
-        # Gerar visualização
-        print("📊 Gerando visualizações...")
-        fig = otimizador.gerar_visualizacao_completa(resultado_dp, resultado_mc, comparacao)
-        
-        logging.info("Desafio 1 executado com sucesso")
-        
-        return {
-            'sucesso': True,
-            'deterministico': resultado_dp,
-            'monte_carlo': resultado_mc,
-            'comparacao': comparacao,
-            'figura': fig
-        }
+        # executar a função decorada que engloba toda a execução
+        return _exec_total()
         
     except Exception as e:
         logging.error(f"Erro no Desafio 1: {e}")
